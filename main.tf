@@ -234,7 +234,8 @@ resource "aws_db_instance" "escolaronline_db" {
 resource "aws_eks_cluster" "eks_cluster" {
   name     = "escolaronline-cluster"
   role_arn = local.lab_role_arn
-  version  = "1.29"
+  
+  # AL BORRAR LA LÍNEA DE VERSIÓN, AWS ELIGE LA PREDETERMINADA SOPORTADA AUTOMÁTICAMENTE
 
   vpc_config {
     subnet_ids = [
