@@ -290,7 +290,7 @@ resource "aws_instance" "workspace" {
               systemctl enable --now docker
               usermod -aG docker ubuntu
 
-              # Instalar AWS CLI v2
+              # Instalar AWS CLI v2 (ARM64)
               curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
               unzip -q awscliv2.zip
               ./aws/install
