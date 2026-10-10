@@ -255,6 +255,8 @@ resource "aws_eks_node_group" "eks_nodes" {
   subnet_ids      = [aws_subnet.priv_app_1a.id, aws_subnet.priv_app_1b.id]
   instance_types  = ["t4g.small"]
   
+  ami_type        = "AL2023_ARM_64_STANDARD"
+  
   scaling_config {
     desired_size = 2
     max_size     = 4
