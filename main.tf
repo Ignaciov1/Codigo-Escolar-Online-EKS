@@ -285,24 +285,24 @@ resource "aws_instance" "workspace" {
 
   user_data = <<-EOF
               #!/bin/bash
+              
+              # 1. Instalar dependencias mínimas para clonar
               apt-get update -y
-              apt-get install -y docker.io git unzip curl mysql-client jq
-              systemctl enable --now docker
-              usermod -aG docker ubuntu
+              apt-get install -y git
 
-              # Instalar AWS CLI v2 (ARM64)
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-aarch64.zip" -o "awscliv2.zip"
-              unzip -q awscliv2.zip
-              ./aws/install
-
-              # Instalar kubectl
-              curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.29.0/2024-01-04/bin/linux/arm64/kubectl
-              chmod +x ./kubectl
-              mv ./kubectl /usr/local/bin/kubectl
-
-              # Clonar repositorio
+              # 2. Clonar el repositorio
               git clone ${var.github_repo_url} /home/ubuntu/Escolar-Online-EKS
               chown -R ubuntu:ubuntu /home/ubuntu/Escolar-Online-EKS
+
+              # 3. Inyectar credenciales usando las variables de Terraform
+              mkdir -p /home/ubuntu/.aws
+              cat << 'EOC' > /home/ubuntu/.aws/credentials
+              [default]
+              aws_access_key_id = ${var.academy_access_key}
+              aws_secret_access_key = ${var.academy_secret_key}
+              aws_session_token = ${var.academy_session_token}
+              EOC
+              chown -R ubuntu:ubuntu /home/ubuntu/.aws
               EOF
 
   tags = { Name = "Workspace-EKS-Admin" }

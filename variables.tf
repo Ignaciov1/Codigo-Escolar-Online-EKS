@@ -17,3 +17,18 @@ variable "db_password" {
   description = "Contraseña maestra de RDS"
   default     = "alumno123"
 }
+
+variable "academy_access_key" {
+  description = "AWS Access Key temporal de Academy"
+  type        = string
+}
+
+variable "academy_secret_key" {
+  description = "AWS Secret Key temporal de Academy"
+  type        = string
+}
+
+variable "academy_session_token" {
+  description = "AWS Session Token temporal de Academy"
+  type        = string
+}
