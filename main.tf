@@ -307,3 +307,40 @@ resource "aws_instance" "workspace" {
 
   tags = { Name = "Workspace-EKS-Admin" }
 }
+
+# ==========================================
+# CERTIFICADO AUTOFIRMADO PARA ALB INGRESS
+# ==========================================
+
+# 1. Generar clave privada RSA
+resource "tls_private_key" "alb_key" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+# 2. Generar certificado autofirmado
+resource "tls_self_signed_cert" "alb_cert_local" {
+  private_key_pem = tls_private_key.alb_key.private_key_pem
+
+  subject {
+    common_name  = "escolaronline.local"
+    organization = "Duoc UC - EscolarOnline"
+  }
+
+  validity_period_hours = 8760 # 1 año
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+    "server_auth",
+  ]
+}
+
+# 3. Importar el certificado a AWS ACM
+resource "aws_acm_certificate" "alb_acm_cert" {
+  private_key      = tls_private_key.alb_key.private_key_pem
+  certificate_body = tls_self_signed_cert.alb_cert_local.cert_pem
+  
+  tags = {
+    Name = "escolaronline-cert"
+  }
+}

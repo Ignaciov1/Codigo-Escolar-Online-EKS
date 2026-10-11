@@ -15,3 +15,9 @@ output "workspace_instance_id" {
   value = aws_instance.workspace.id
   description = "Conéctate a esta instancia por Session Manager"
 }
+
+# 4. Output para obtener el ARN del certificado fácilmente
+output "acm_certificate_arn" {
+  description = "El ARN del certificado autofirmado en ACM para usar en el Ingress"
+  value       = aws_acm_certificate.alb_acm_cert.arn
+}
