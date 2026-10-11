@@ -277,11 +277,16 @@ data "aws_ami" "ubuntu_arm64" {
 }
 
 resource "aws_instance" "workspace" {
-  ami                    = data.aws_ami.ubuntu_arm64.id
-  instance_type          = "t4g.small"
-  subnet_id              = aws_subnet.priv_app_1a.id
-  vpc_security_group_ids = [aws_security_group.sg_eks.id]
-  iam_instance_profile   = "LabInstanceProfile"
+  ami                         = data.aws_ami.ubuntu_arm64.id
+  instance_type               = "t4g.small"
+  
+  # AQUÍ ESTÁ EL CAMBIO: Usamos tu subred pública real
+  subnet_id                   = aws_subnet.pub_1a.id 
+  
+  associate_public_ip_address = true 
+  
+  vpc_security_group_ids      = [aws_security_group.sg_eks.id]
+  iam_instance_profile        = "LabInstanceProfile"
 
   user_data = <<-EOF
               #!/bin/bash
