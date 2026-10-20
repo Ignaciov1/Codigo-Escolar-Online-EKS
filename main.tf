@@ -253,7 +253,9 @@ resource "aws_eks_node_group" "eks_nodes" {
   node_group_name = "escolaronline-nodes"
   node_role_arn   = local.lab_role_arn
   subnet_ids      = [aws_subnet.priv_app_1a.id, aws_subnet.priv_app_1b.id]
-  instance_types  = ["t4g.small"]
+  
+  # Cambia "t4g.small" a "t4g.medium" o "t4g.large"
+  instance_types  = ["t4g.medium"] 
   
   ami_type        = "AL2023_ARM_64_STANDARD"
   
