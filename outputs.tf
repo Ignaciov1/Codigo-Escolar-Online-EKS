@@ -3,7 +3,7 @@ output "account_id" {
 }
 
 output "rds_endpoint" {
-  value = aws_db_instance.escolaronline_db.endpoint
+  value = aws_db_instance.freshbox_db.endpoint
   description = "El endpoint real que irá en tu ConfigMap (sin el puerto :3306)"
 }
 
