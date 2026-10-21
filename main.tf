@@ -16,7 +16,7 @@ resource "aws_vpc" "eks_vpc" {
   cidr_block           = "10.0.0.0/22"
   enable_dns_hostnames = true
   enable_dns_support   = true
-  tags = { Name = "escolaronline-vpc" }
+  tags = { Name = "freshbox-vpc" }
 }
 
 resource "aws_subnet" "pub_1a" {
@@ -25,7 +25,7 @@ resource "aws_subnet" "pub_1a" {
   availability_zone       = "${var.aws_region}a"
   map_public_ip_on_launch = true
   tags = {
-    Name                     = "escolaronline-subnet-pub-1a"
+    Name                     = "freshbox-subnet-pub-1a"
     "kubernetes.io/role/elb" = "1"
   }
 }
@@ -35,7 +35,7 @@ resource "aws_subnet" "pub_1b" {
   availability_zone       = "${var.aws_region}b"
   map_public_ip_on_launch = true
   tags = {
-    Name                     = "escolaronline-subnet-pub-1b"
+    Name                     = "freshbox-subnet-pub-1b"
     "kubernetes.io/role/elb" = "1"
   }
 }
@@ -45,7 +45,7 @@ resource "aws_subnet" "priv_app_1a" {
   cidr_block        = "10.0.1.0/25"
   availability_zone = "${var.aws_region}a"
   tags = {
-    Name                              = "escolaronline-subnet-priv-app-1a"
+    Name                              = "freshbox-subnet-priv-app-1a"
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
@@ -54,7 +54,7 @@ resource "aws_subnet" "priv_app_1b" {
   cidr_block        = "10.0.1.128/25"
   availability_zone = "${var.aws_region}b"
   tags = {
-    Name                              = "escolaronline-subnet-priv-app-1b"
+    Name                              = "freshbox-subnet-priv-app-1b"
     "kubernetes.io/role/internal-elb" = "1"
   }
 }
@@ -63,13 +63,13 @@ resource "aws_subnet" "priv_data_1a" {
   vpc_id            = aws_vpc.eks_vpc.id
   cidr_block        = "10.0.2.0/26"
   availability_zone = "${var.aws_region}a"
-  tags = { Name = "escolaronline-subnet-priv-data-1a" }
+  tags = { Name = "freshbox-subnet-priv-data-1a" }
 }
 resource "aws_subnet" "priv_data_1b" {
   vpc_id            = aws_vpc.eks_vpc.id
   cidr_block        = "10.0.2.64/26"
   availability_zone = "${var.aws_region}b"
-  tags = { Name = "escolaronline-subnet-priv-data-1b" }
+  tags = { Name = "freshbox-subnet-priv-data-1b" }
 }
 
 # ==========================================
@@ -77,7 +77,7 @@ resource "aws_subnet" "priv_data_1b" {
 # ==========================================
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.eks_vpc.id
-  tags = { Name = "escolaronline-igw" }
+  tags = { Name = "freshbox-igw" }
 }
 
 resource "aws_eip" "nat_eip" { domain = "vpc" }
@@ -85,7 +85,7 @@ resource "aws_eip" "nat_eip" { domain = "vpc" }
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
   subnet_id     = aws_subnet.pub_1a.id
-  tags = { Name = "escolaronline-nat" }
+  tags = { Name = "freshbox-nat" }
 }
 
 resource "aws_route_table" "rt_pub" {
@@ -94,7 +94,7 @@ resource "aws_route_table" "rt_pub" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
-  tags = { Name = "escolaronline-rt-pub" }
+  tags = { Name = "freshbox-rt-pub" }
 }
 resource "aws_route_table_association" "rta_pub_1a" {
   subnet_id      = aws_subnet.pub_1a.id
@@ -111,7 +111,7 @@ resource "aws_route_table" "rt_priv" {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.nat.id
   }
-  tags = { Name = "escolaronline-rt-priv" }
+  tags = { Name = "freshbox-rt-priv" }
 }
 resource "aws_route_table_association" "rta_priv_app_1a" {
   subnet_id      = aws_subnet.priv_app_1a.id
@@ -134,7 +134,7 @@ resource "aws_route_table_association" "rta_priv_data_1b" {
 # 3. SECURITY GROUPS
 # ==========================================
 resource "aws_security_group" "sg_alb" {
-  name   = "SG-ALB"
+  name   = "SG-ALB-FreshBox"
   vpc_id = aws_vpc.eks_vpc.id
 
   ingress {
@@ -160,7 +160,7 @@ resource "aws_security_group" "sg_alb" {
 }
 
 resource "aws_security_group" "sg_eks" {
-  name   = "SG-EKS"
+  name   = "SG-EKS-FreshBox"
   vpc_id = aws_vpc.eks_vpc.id
 
   ingress {
@@ -186,7 +186,7 @@ resource "aws_security_group" "sg_eks" {
 }
 
 resource "aws_security_group" "sg_rds" {
-  name   = "SG-RDS"
+  name   = "SG-RDS-FreshBox"
   vpc_id = aws_vpc.eks_vpc.id
 
   ingress {
@@ -208,17 +208,20 @@ resource "aws_security_group" "sg_rds" {
 # 4. BASE DE DATOS (RDS Multi-AZ)
 # ==========================================
 resource "aws_db_subnet_group" "rds_subnet_group" {
-  name       = "escolaronline-rds-subnet-group"
+  name       = "freshbox-rds-subnet-group"
   subnet_ids = [aws_subnet.priv_data_1a.id, aws_subnet.priv_data_1b.id]
 }
 
-resource "aws_db_instance" "escolaronline_db" {
-  identifier             = "escolaronline-db"
+resource "aws_db_instance" "freshbox_db" {
+  identifier             = "freshbox-db"
   engine                 = "mysql"
   engine_version         = "8.0"
-  instance_class         = "db.t4g.micro"
+  
+  # ACTUALIZADO a db.t4g.small para cumplir con la rúbrica del EP2
+  instance_class         = "db.t4g.small" 
+  
   allocated_storage      = 20
-  db_name                = "escolar_online"
+  db_name                = "freshbox_db"
   username               = var.db_user
   password               = var.db_password
   db_subnet_group_name   = aws_db_subnet_group.rds_subnet_group.name
@@ -232,11 +235,9 @@ resource "aws_db_instance" "escolaronline_db" {
 # 5. CLUSTER EKS Y NODOS
 # ==========================================
 resource "aws_eks_cluster" "eks_cluster" {
-  name     = "escolaronline-cluster"
+  name     = "freshbox-cluster"
   role_arn = local.lab_role_arn
   
-  # AL BORRAR LA LÍNEA DE VERSIÓN, AWS ELIGE LA PREDETERMINADA SOPORTADA AUTOMÁTICAMENTE
-
   vpc_config {
     subnet_ids = [
       aws_subnet.pub_1a.id,
@@ -250,11 +251,11 @@ resource "aws_eks_cluster" "eks_cluster" {
 
 resource "aws_eks_node_group" "eks_nodes" {
   cluster_name    = aws_eks_cluster.eks_cluster.name
-  node_group_name = "escolaronline-nodes"
+  node_group_name = "freshbox-nodes"
   node_role_arn   = local.lab_role_arn
   subnet_ids      = [aws_subnet.priv_app_1a.id, aws_subnet.priv_app_1b.id]
   
-  # Cambia "t4g.small" a "t4g.medium" o "t4g.large"
+  # Mantenemos "t4g.medium" como indicaste para evitar problemas de cupos de red (max 34 pods)
   instance_types  = ["t4g.medium"] 
   
   ami_type        = "AL2023_ARM_64_STANDARD"
@@ -281,27 +282,20 @@ data "aws_ami" "ubuntu_arm64" {
 resource "aws_instance" "workspace" {
   ami                         = data.aws_ami.ubuntu_arm64.id
   instance_type               = "t4g.small"
-  
-  # AQUÍ ESTÁ EL CAMBIO: Usamos tu subred pública real
   subnet_id                   = aws_subnet.pub_1a.id 
-  
   associate_public_ip_address = true 
-  
   vpc_security_group_ids      = [aws_security_group.sg_eks.id]
   iam_instance_profile        = "LabInstanceProfile"
 
   user_data = <<-EOF
               #!/bin/bash
-              
-              # 1. Instalar dependencias mínimas para clonar
               apt-get update -y
               apt-get install -y git
+              
+              # Clonar el repo en la nueva carpeta FreshBox-EKS
+              git clone ${var.github_repo_url} /home/ubuntu/FreshBox-EKS
+              chown -R ubuntu:ubuntu /home/ubuntu/FreshBox-EKS
 
-              # 2. Clonar el repositorio
-              git clone ${var.github_repo_url} /home/ubuntu/Escolar-Online-EKS
-              chown -R ubuntu:ubuntu /home/ubuntu/Escolar-Online-EKS
-
-              # 3. Inyectar credenciales usando las variables de Terraform
               mkdir -p /home/ubuntu/.aws
               cat << 'EOC' > /home/ubuntu/.aws/credentials
               [default]
@@ -312,29 +306,26 @@ resource "aws_instance" "workspace" {
               chown -R ubuntu:ubuntu /home/ubuntu/.aws
               EOF
 
-  tags = { Name = "Workspace-EKS-Admin" }
+  tags = { Name = "Workspace-EKS-Admin-FreshBox" }
 }
 
 # ==========================================
 # CERTIFICADO AUTOFIRMADO PARA ALB INGRESS
 # ==========================================
-
-# 1. Generar clave privada RSA
 resource "tls_private_key" "alb_key" {
   algorithm = "RSA"
   rsa_bits  = 2048
 }
 
-# 2. Generar certificado autofirmado
 resource "tls_self_signed_cert" "alb_cert_local" {
   private_key_pem = tls_private_key.alb_key.private_key_pem
 
   subject {
-    common_name  = "escolaronline.local"
-    organization = "Duoc UC - EscolarOnline"
+    common_name  = "freshbox.local"
+    organization = "FreshBox SpA"
   }
 
-  validity_period_hours = 8760 # 1 año
+  validity_period_hours = 8760
   allowed_uses = [
     "key_encipherment",
     "digital_signature",
@@ -342,12 +333,11 @@ resource "tls_self_signed_cert" "alb_cert_local" {
   ]
 }
 
-# 3. Importar el certificado a AWS ACM
 resource "aws_acm_certificate" "alb_acm_cert" {
   private_key      = tls_private_key.alb_key.private_key_pem
   certificate_body = tls_self_signed_cert.alb_cert_local.cert_pem
   
   tags = {
-    Name = "escolaronline-cert"
+    Name = "freshbox-cert"
   }
 }
