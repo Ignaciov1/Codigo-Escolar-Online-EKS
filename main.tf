@@ -221,6 +221,7 @@ resource "aws_db_instance" "freshbox_db" {
   instance_class         = "db.t4g.small" 
   
   allocated_storage      = 20
+  storage_encrypted = true
   db_name                = "freshbox_db"
   username               = var.db_user
   password               = var.db_password
