@@ -80,14 +80,6 @@ resource "aws_internet_gateway" "igw" {
   tags = { Name = "freshbox-igw" }
 }
 
-resource "aws_eip" "nat_eip" { domain = "vpc" }
-
-resource "aws_nat_gateway" "nat" {
-  allocation_id = aws_eip.nat_eip.id
-  subnet_id     = aws_subnet.pub_1a.id
-  tags = { Name = "freshbox-nat" }
-}
-
 resource "aws_route_table" "rt_pub" {
   vpc_id = aws_vpc.eks_vpc.id
   route {
@@ -105,29 +97,56 @@ resource "aws_route_table_association" "rta_pub_1b" {
   route_table_id = aws_route_table.rt_pub.id
 }
 
-resource "aws_route_table" "rt_priv" {
+# --- NAT GATEWAY ZONA A ---
+resource "aws_eip" "nat_eip_1a" { domain = "vpc" }
+
+resource "aws_nat_gateway" "nat_1a" {
+  allocation_id = aws_eip.nat_eip_1a.id
+  subnet_id     = aws_subnet.pub_1a.id
+  tags = { Name = "freshbox-nat-1a" }
+}
+
+resource "aws_route_table" "rt_priv_1a" {
   vpc_id = aws_vpc.eks_vpc.id
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat.id
+    nat_gateway_id = aws_nat_gateway.nat_1a.id
   }
-  tags = { Name = "freshbox-rt-priv" }
+  tags = { Name = "freshbox-rt-priv-1a" }
 }
 resource "aws_route_table_association" "rta_priv_app_1a" {
   subnet_id      = aws_subnet.priv_app_1a.id
-  route_table_id = aws_route_table.rt_priv.id
-}
-resource "aws_route_table_association" "rta_priv_app_1b" {
-  subnet_id      = aws_subnet.priv_app_1b.id
-  route_table_id = aws_route_table.rt_priv.id
+  route_table_id = aws_route_table.rt_priv_1a.id
 }
 resource "aws_route_table_association" "rta_priv_data_1a" {
   subnet_id      = aws_subnet.priv_data_1a.id
-  route_table_id = aws_route_table.rt_priv.id
+  route_table_id = aws_route_table.rt_priv_1a.id
+}
+
+# --- NAT GATEWAY ZONA B ---
+resource "aws_eip" "nat_eip_1b" { domain = "vpc" }
+
+resource "aws_nat_gateway" "nat_1b" {
+  allocation_id = aws_eip.nat_eip_1b.id
+  subnet_id     = aws_subnet.pub_1b.id
+  tags = { Name = "freshbox-nat-1b" }
+}
+
+resource "aws_route_table" "rt_priv_1b" {
+  vpc_id = aws_vpc.eks_vpc.id
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_1b.id
+  }
+  tags = { Name = "freshbox-rt-priv-1b" }
+}
+resource "aws_route_table_association" "rta_priv_app_1b" {
+  subnet_id      = aws_subnet.priv_app_1b.id
+  route_table_id = aws_route_table.rt_priv_1b.id
 }
 resource "aws_route_table_association" "rta_priv_data_1b" {
   subnet_id      = aws_subnet.priv_data_1b.id
-  route_table_id = aws_route_table.rt_priv.id
+  route_table_id = aws_route_table.rt_priv_1b.id
 }
 
 # ==========================================
@@ -217,11 +236,10 @@ resource "aws_db_instance" "freshbox_db" {
   engine                 = "mysql"
   engine_version         = "8.0"
   
-  # ACTUALIZADO a db.t4g.small para cumplir con la rúbrica del EP2
   instance_class         = "db.t4g.small" 
   
   allocated_storage      = 20
-  storage_encrypted = true
+  storage_encrypted      = true
   db_name                = "freshbox_db"
   username               = var.db_user
   password               = var.db_password
@@ -256,7 +274,6 @@ resource "aws_eks_node_group" "eks_nodes" {
   node_role_arn   = local.lab_role_arn
   subnet_ids      = [aws_subnet.priv_app_1a.id, aws_subnet.priv_app_1b.id]
   
-  # Mantenemos "t4g.medium" como indicaste para evitar problemas de cupos de red (max 34 pods)
   instance_types  = ["t4g.medium"] 
   
   ami_type        = "AL2023_ARM_64_STANDARD"
